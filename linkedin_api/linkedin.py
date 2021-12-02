@@ -71,7 +71,7 @@ class Linkedin(object):
             proxies=proxies,
             cookies_dir=cookies_dir,
         )
-        logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+        # logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
         self.logger = logger
 
         if authenticate:

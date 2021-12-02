@@ -61,7 +61,7 @@ class Client(object):
         self._use_cookie_cache = not refresh_cookies
         self._cookie_repository = CookieRepository(cookies_dir=cookies_dir)
 
-        logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+        # logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
     def _request_session_cookies(self):
         """
