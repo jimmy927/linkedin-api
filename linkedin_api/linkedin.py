@@ -568,7 +568,6 @@ class Linkedin(object):
                     "com.linkedin.voyager.identity.profile.CustomWebsite"
                 ]["label"]
 
-            del item["type"]
 
         contact_info["websites"] = websites
 
@@ -593,8 +592,6 @@ class Linkedin(object):
         data = res.json()
 
         skills = data.get("elements", [])
-        for item in skills:
-            del item["entityUrn"]
 
         return skills
 
@@ -639,13 +636,6 @@ class Linkedin(object):
             profile["profile_urn"] = profile["miniProfile"]["entityUrn"]
             profile["member_urn"] = profile["miniProfile"]["objectUrn"]
 
-            del profile["miniProfile"]
-
-        del profile["defaultLocale"]
-        del profile["supportedLocales"]
-        del profile["versionTag"]
-        del profile["showEducationOnProfileTopCard"]
-
         # massage [experience] data
         experience = data["positionView"]["elements"]
         for item in experience:
@@ -656,7 +646,6 @@ class Linkedin(object):
                     )
                     if logo:
                         item["companyLogoUrl"] = logo["rootUrl"]
-                del item["company"]["miniCompany"]
 
         profile["experience"] = experience
 
@@ -668,40 +657,27 @@ class Linkedin(object):
                     item["school"]["logoUrl"] = item["school"]["logo"][
                         "com.linkedin.common.VectorImage"
                     ]["rootUrl"]
-                    del item["school"]["logo"]
 
         profile["education"] = education
 
         # massage [languages] data
         languages = data["languageView"]["elements"]
-        for item in languages:
-            del item["entityUrn"]
         profile["languages"] = languages
 
         # massage [publications] data
         publications = data["publicationView"]["elements"]
-        for item in publications:
-            del item["entityUrn"]
-            for author in item.get("authors", []):
-                del author["entityUrn"]
         profile["publications"] = publications
 
         # massage [certifications] data
         certifications = data["certificationView"]["elements"]
-        for item in certifications:
-            del item["entityUrn"]
         profile["certifications"] = certifications
 
         # massage [volunteer] data
         volunteer = data["volunteerExperienceView"]["elements"]
-        for item in volunteer:
-            del item["entityUrn"]
         profile["volunteer"] = volunteer
 
         # massage [honors] data
         honors = data["honorView"]["elements"]
-        for item in honors:
-            del item["entityUrn"]
         profile["honors"] = honors
 
         return profile
