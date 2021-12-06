@@ -129,7 +129,7 @@ class Linkedin(object):
         data = res.json()
         if data and "status" in data and data["status"] != 200:
             self.logger.info("request failed: {}".format(data["message"]))
-            return {}
+            return data
         while data and data["metadata"]["paginationToken"] != "":
             if len(data["elements"]) >= post_count:
                 break
@@ -165,7 +165,7 @@ class Linkedin(object):
         data = res.json()
         if data and "status" in data and data["status"] != 200:
             self.logger.info("request failed: {}".format(data["status"]))
-            return {}
+            return data
         while data and data["metadata"]["paginationToken"] != "":
             if len(data["elements"]) >= comment_count:
                 break
@@ -176,7 +176,7 @@ class Linkedin(object):
             res = self._fetch(url, params=url_params)
             if res.json() and "status" in res.json() and res.json()["status"] != 200:
                 self.logger.info("request failed: {}".format(data["status"]))
-                return {}
+                return data
             data["metadata"] = res.json()["metadata"]
             """ When the number of comments exceed total available 
             comments, the api starts returning an empty list of elements"""
@@ -188,7 +188,7 @@ class Linkedin(object):
             data["paging"] = res.json()["paging"]
         return data["elements"]
 
-    def search(self, params, limit=-1, offset=0):
+    def search(self, params, limit=-1, offset=0, raw=False):
         """Perform a LinkedIn search.
 
         :param params: Search parameters (see code)
@@ -226,6 +226,8 @@ class Linkedin(object):
                 headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
             )
             data = res.json()
+            if raw:
+                return data
 
             new_elements = []
             elements = data.get("data", {}).get("elements", [])
@@ -272,6 +274,7 @@ class Linkedin(object):
         keyword_school=None,
         network_depth=None,  # DEPRECATED - use network_depths
         title=None,  # DEPRECATED - use keyword_title
+        raw=False,
         **kwargs,
     ):
         """Perform a LinkedIn search for people.
@@ -358,7 +361,8 @@ class Linkedin(object):
             params["keywords"] = keywords
 
         data = self.search(params, **kwargs)
-
+        if raw:
+            return data
         results = []
         for item in data:
             if not include_private_profiles and "publicIdentifier" not in item:
@@ -374,7 +378,7 @@ class Linkedin(object):
 
         return results
 
-    def search_companies(self, keywords=None, **kwargs):
+    def search_companies(self, keywords=None, raw=False, **kwargs):
         """Perform a LinkedIn search for companies.
 
         :param keywords: A list of search keywords (str)
@@ -394,6 +398,8 @@ class Linkedin(object):
             params["keywords"] = keywords
 
         data = self.search(params, **kwargs)
+        if raw:
+            return data
 
         results = []
         for item in data:
@@ -532,7 +538,7 @@ class Linkedin(object):
 
         return results
 
-    def get_profile_contact_info(self, public_id=None, urn_id=None):
+    def get_profile_contact_info(self, public_id=None, urn_id=None, raw=False):
         """Fetch contact information for a given LinkedIn profile. Pass a [public_id] or a [urn_id].
 
         :param public_id: LinkedIn public ID for a profile
@@ -547,7 +553,8 @@ class Linkedin(object):
             f"/identity/profiles/{public_id or urn_id}/profileContactInfo"
         )
         data = res.json()
-
+        if raw:
+            return data
         contact_info = {
             "email_address": data.get("emailAddress"),
             "websites": [],
@@ -573,7 +580,7 @@ class Linkedin(object):
 
         return contact_info
 
-    def get_profile_skills(self, public_id=None, urn_id=None):
+    def get_profile_skills(self, public_id=None, urn_id=None, raw=False):
         """Fetch the skills listed on a given LinkedIn profile.
 
         :param public_id: LinkedIn public ID for a profile
@@ -590,12 +597,14 @@ class Linkedin(object):
             f"/identity/profiles/{public_id or urn_id}/skills", params=params
         )
         data = res.json()
+        if raw:
+            return data
 
         skills = data.get("elements", [])
 
         return skills
 
-    def get_profile(self, public_id=None, urn_id=None):
+    def get_profile(self, public_id=None, urn_id=None, raw=False):
         """Fetch data for a given LinkedIn profile.
 
         :param public_id: LinkedIn public ID for a profile
@@ -613,6 +622,8 @@ class Linkedin(object):
         data = res.json()
         if data and "status" in data and data["status"] != 200:
             self.logger.info(f"request failed: {data}")
+            return data
+        if raw:
             return data
 
         # massage [profile] data
@@ -783,7 +794,7 @@ class Linkedin(object):
             max_results=max_results,
         )
 
-    def get_current_profile_views(self):
+    def get_current_profile_views(self, raw=False):
         """Get profile view statistics, including chart data.
 
         :return: Profile view data
@@ -792,6 +803,8 @@ class Linkedin(object):
         res = self._fetch(f"/identity/wvmpCards")
 
         data = res.json()
+        if raw:
+            return data
 
         return data["elements"][0]["value"][
             "com.linkedin.voyager.identity.me.wvmpOverview.WvmpViewersCard"
@@ -801,7 +814,7 @@ class Linkedin(object):
             "numViews"
         ]
 
-    def get_school(self, public_id):
+    def get_school(self, public_id, raw=False):
         """Fetch data about a given LinkedIn school.
 
         :param public_id: LinkedIn public ID for a school
@@ -822,13 +835,15 @@ class Linkedin(object):
 
         if data and "status" in data and data["status"] != 200:
             self.logger.info("request failed: {}".format(data))
-            return {}
+            return data
+        if raw:
+            return data
 
         school = data["elements"][0]
 
         return school
 
-    def get_company(self, public_id):
+    def get_company(self, public_id, raw=False):
         """Fetch data about a given LinkedIn company.
 
         :param public_id: LinkedIn public ID for a company
@@ -849,13 +864,15 @@ class Linkedin(object):
 
         if data and "status" in data and data["status"] != 200:
             self.logger.info("request failed: {}".format(data["message"]))
-            return {}
+            return data
+        if raw:
+            return data
 
         company = data["elements"][0]
 
         return company
 
-    def get_conversation_details(self, profile_urn_id):
+    def get_conversation_details(self, profile_urn_id, raw=False):
         """Fetch conversation (message thread) details for a given LinkedIn profile.
 
         :param profile_urn_id: LinkedIn URN ID for a profile
@@ -872,9 +889,10 @@ class Linkedin(object):
         )
 
         data = res.json()
-
+        if raw:
+            return data
         if data["elements"] == []:
-            return {}
+            return data
 
         item = data["elements"][0]
         item["id"] = get_id_from_urn(item["entityUrn"])
@@ -1005,7 +1023,7 @@ class Linkedin(object):
 
         return me_profile
 
-    def get_invitations(self, start=0, limit=3):
+    def get_invitations(self, start=0, limit=3, raw=False):
         """Fetch connection invitations for the currently logged in user.
 
         :param start: How much to offset results by
@@ -1032,6 +1050,8 @@ class Linkedin(object):
             return []
 
         response_payload = res.json()
+        if raw:
+            return response_payload
         return [element["invitation"] for element in response_payload["elements"]]
 
     def reply_invitation(
@@ -1232,7 +1252,7 @@ class Linkedin(object):
             },
         )
 
-    def get_profile_privacy_settings(self, public_profile_id):
+    def get_profile_privacy_settings(self, public_profile_id, raw=False):
         """Fetch privacy settings for a given LinkedIn profile.
 
         :param public_profile_id: public ID of a LinkedIn profile
@@ -1245,13 +1265,14 @@ class Linkedin(object):
             f"/identity/profiles/{public_profile_id}/privacySettings",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
-        if res.status_code != 200:
-            return {}
-
         data = res.json()
+        if res.status_code != 200:
+            return data
+        if raw:
+            return data
         return data.get("data", {})
 
-    def get_profile_member_badges(self, public_profile_id):
+    def get_profile_member_badges(self, public_profile_id, raw=False):
         """Fetch badges for a given LinkedIn profile.
 
         :param public_profile_id: public ID of a LinkedIn profile
@@ -1264,13 +1285,15 @@ class Linkedin(object):
             f"/identity/profiles/{public_profile_id}/memberBadges",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
-        if res.status_code != 200:
-            return {}
 
         data = res.json()
+        if res.status_code != 200:
+            return data
+        if raw:
+            return data
         return data.get("data", {})
 
-    def get_profile_network_info(self, public_profile_id):
+    def get_profile_network_info(self, public_profile_id, raw=False):
         """Fetch network information for a given LinkedIn profile.
 
         :param public_profile_id: public ID of a LinkedIn profile
@@ -1283,10 +1306,12 @@ class Linkedin(object):
             f"/identity/profiles/{public_profile_id}/networkinfo",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
-        if res.status_code != 200:
-            return {}
-
         data = res.json()
+        if res.status_code != 200:
+            return data
+
+        if raw:
+            return data
         return data.get("data", {})
 
     def unfollow_entity(self, urn_id):
