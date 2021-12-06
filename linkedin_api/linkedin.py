@@ -84,8 +84,6 @@ class Linkedin(object):
 
     def _fetch(self, uri, evade=default_evade, base_request=False, **kwargs):
         """GET request to Linkedin API"""
-        evade()
-
         url = f"{self.client.API_BASE_URL if not base_request else self.client.LINKEDIN_BASE_URL}{uri}"
         return self.client.session.get(url, **kwargs)
 
@@ -594,7 +592,33 @@ class Linkedin(object):
         """
         params = {"count": 100, "start": 0}
         res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/skills", params=params
+            f"/identity/profiles/{public_id or urn_id}/skills", params=params,
+            headers = {"accept": "application/vnd.linkedin.normalized+json+2.1"},
+        )
+        data = res.json()
+        if raw:
+            return data
+
+        skills = data.get("elements", [])
+
+        return skills
+
+    def get_profile_skillcategory(self, public_id=None, urn_id=None, raw=False):
+        """Fetch the skills and also endorements listed on a given LinkedIn profile.
+
+        :param public_id: LinkedIn public ID for a profile
+        :type public_id: str, optional
+        :param urn_id: LinkedIn URN ID for a profile
+        :type urn_id: str, optional
+
+        :return: List of skill objects
+        :rtype: list
+        """
+        params = {"count": 100, "start": 0}
+        res = self._fetch(
+            f"/identity/profiles/{public_id or urn_id}"
+            f"/skillCategory?includeHiddenEndorsers=true",
+            headers = {"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
         if raw:
