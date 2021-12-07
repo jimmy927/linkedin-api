@@ -1455,3 +1455,30 @@ class Linkedin(object):
             limit, offset, exclude_promoted_posts
         )
         return get_list_posts_sorted_without_promoted(l_urns, l_posts)
+
+    def get_profile_extra(self, extra):
+        assert extra in [
+            "positions",
+            "patents",
+            "educations",
+            "organizations",
+            "projects",
+            "positions",
+            "languages",
+            "certifications",
+            "courses",
+            "honors",
+            "skills",
+            "volunteerExperiences",
+            "volunteerCauses",
+            "publications",
+        ], "No such extra resource known"
+
+        params = {"count": 100, "start": 0}
+        res = self._fetch(
+            f"/identity/profiles/{public_id or urn_id}/{extra}",
+            params=params,
+            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+        )
+        data = res.json()
+        return data
