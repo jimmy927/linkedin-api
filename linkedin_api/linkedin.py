@@ -573,7 +573,6 @@ class Linkedin(object):
                     "com.linkedin.voyager.identity.profile.CustomWebsite"
                 ]["label"]
 
-
         contact_info["websites"] = websites
 
         return contact_info
@@ -592,8 +591,9 @@ class Linkedin(object):
         """
         params = {"count": 100, "start": 0}
         res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/skills", params=params,
-            headers = {"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            f"/identity/profiles/{public_id or urn_id}/skills",
+            params=params,
+            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
         if raw:
@@ -618,7 +618,8 @@ class Linkedin(object):
         res = self._fetch(
             f"/identity/profiles/{public_id or urn_id}"
             f"/skillCategory?includeHiddenEndorsers=true",
-            headers = {"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            params=params,
         )
         data = res.json()
         if raw:
