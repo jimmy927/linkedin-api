@@ -32,7 +32,6 @@ def default_evade():
     A catch-all method to try and evade suspension from Linkedin.
     Currenly, just delays the request by a random (bounded) time
     """
-    sleep(random.randint(2, 5))  # sleep a random duration to try and evade suspention
 
 
 class Linkedin(object):
@@ -590,20 +589,21 @@ class Linkedin(object):
         :rtype: list
         """
         params = {"count": 100, "start": 0}
+        url = f"/identity/profiles/{public_id or urn_id}/skills"
         res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/skills",
+            url,
             params=params,
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
         if raw:
-            return data
+            return data, url
 
         skills = data.get("elements", [])
 
         return skills
 
-    def get_profile_skillcategory(self, public_id=None, urn_id=None, raw=False):
+    def get_profile_skillcategory(self, public_id=None, urn_id=None):
         """Fetch the skills and also endorements listed on a given LinkedIn profile.
 
         :param public_id: LinkedIn public ID for a profile
@@ -615,21 +615,18 @@ class Linkedin(object):
         :rtype: list
         """
         params = {"count": 100, "start": 0}
-        res = self._fetch(
+        url = (
             f"/identity/profiles/{public_id or urn_id}"
-            f"/skillCategory?includeHiddenEndorsers=true",
+            f"/skillCategory?includeHiddenEndorsers=true"
+        )
+        data = self._fetch(
+            url,
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
             params=params,
-        )
-        data = res.json()
-        if raw:
-            return data
+        ).json()
+        return data, url
 
-        skills = data.get("elements", [])
-
-        return skills
-
-    def get_profile(self, public_id=None, urn_id=None, raw=False):
+    def get_profile(self, public_id=None, urn_id=None):
         """Fetch data for a given LinkedIn profile.
 
         :param public_id: LinkedIn public ID for a profile
@@ -642,81 +639,11 @@ class Linkedin(object):
         """
         # NOTE this still works for now, but will probably eventually have to be converted to
         # https://www.linkedin.com/voyager/api/identity/profiles/ACoAAAKT9JQBsH7LwKaE9Myay9WcX8OVGuDq9Uw
-        res = self._fetch(f"/identity/profiles/{public_id or urn_id}/profileView")
-
-        data = res.json()
+        url = f"/identity/profiles/{public_id or urn_id}/profileView"
+        data = self._fetch(url).json()
         if data and "status" in data and data["status"] != 200:
             self.logger.info(f"request failed: {data}")
-            return data
-        if raw:
-            return data
-
-        # massage [profile] data
-        profile = data["profile"]
-        if "miniProfile" in profile:
-            if "picture" in profile["miniProfile"]:
-                profile["displayPictureUrl"] = profile["miniProfile"]["picture"][
-                    "com.linkedin.common.VectorImage"
-                ]["rootUrl"]
-
-                images_data = profile["miniProfile"]["picture"][
-                    "com.linkedin.common.VectorImage"
-                ]["artifacts"]
-                for img in images_data:
-                    w, h, url_segment = itemgetter(
-                        "width", "height", "fileIdentifyingUrlPathSegment"
-                    )(img)
-                    profile[f"img_{w}_{h}"] = url_segment
-
-            profile["profile_id"] = get_id_from_urn(profile["miniProfile"]["entityUrn"])
-            profile["profile_urn"] = profile["miniProfile"]["entityUrn"]
-            profile["member_urn"] = profile["miniProfile"]["objectUrn"]
-
-        # massage [experience] data
-        experience = data["positionView"]["elements"]
-        for item in experience:
-            if "company" in item and "miniCompany" in item["company"]:
-                if "logo" in item["company"]["miniCompany"]:
-                    logo = item["company"]["miniCompany"]["logo"].get(
-                        "com.linkedin.common.VectorImage"
-                    )
-                    if logo:
-                        item["companyLogoUrl"] = logo["rootUrl"]
-
-        profile["experience"] = experience
-
-        # massage [education] data
-        education = data["educationView"]["elements"]
-        for item in education:
-            if "school" in item:
-                if "logo" in item["school"]:
-                    item["school"]["logoUrl"] = item["school"]["logo"][
-                        "com.linkedin.common.VectorImage"
-                    ]["rootUrl"]
-
-        profile["education"] = education
-
-        # massage [languages] data
-        languages = data["languageView"]["elements"]
-        profile["languages"] = languages
-
-        # massage [publications] data
-        publications = data["publicationView"]["elements"]
-        profile["publications"] = publications
-
-        # massage [certifications] data
-        certifications = data["certificationView"]["elements"]
-        profile["certifications"] = certifications
-
-        # massage [volunteer] data
-        volunteer = data["volunteerExperienceView"]["elements"]
-        profile["volunteer"] = volunteer
-
-        # massage [honors] data
-        honors = data["honorView"]["elements"]
-        profile["honors"] = honors
-
-        return profile
+        return data, url
 
     def get_profile_connections(self, urn_id):
         """Fetch first-degree connections for a given LinkedIn profile.
@@ -1457,14 +1384,13 @@ class Linkedin(object):
         )
         return get_list_posts_sorted_without_promoted(l_urns, l_posts)
 
-    def get_profile_extra(self, extra):
+    def get_profile_extra(self, profile_id, extra):
         assert extra in [
             "positions",
             "patents",
             "educations",
             "organizations",
             "projects",
-            "positions",
             "languages",
             "certifications",
             "courses",
@@ -1476,10 +1402,10 @@ class Linkedin(object):
         ], "No such extra resource known"
 
         params = {"count": 100, "start": 0}
-        res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/{extra}",
+        url = f"/identity/profiles/{profile_id}/{extra}"
+        data = self._fetch(
+            url,
             params=params,
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-        )
-        data = res.json()
-        return data
+        ).json()
+        return data, url
