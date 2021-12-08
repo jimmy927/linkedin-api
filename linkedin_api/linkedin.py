@@ -116,7 +116,7 @@ class Linkedin(object):
         if urn_id:
             profile_urn = f"urn:li:fsd_profile:{urn_id}"
         else:
-            profile = self.get_profile(public_id=public_id)
+            profile = self.get_profile(public_id)
             profile_urn = profile["profile_urn"].replace(
                 "fs_miniProfile", "fsd_profile"
             )
@@ -626,7 +626,7 @@ class Linkedin(object):
         ).json()
         return data, url
 
-    def get_profile(self, public_id=None, urn_id=None):
+    def get_profile(self, profile_id):
         """Fetch data for a given LinkedIn profile.
 
         :param public_id: LinkedIn public ID for a profile
@@ -639,7 +639,7 @@ class Linkedin(object):
         """
         # NOTE this still works for now, but will probably eventually have to be converted to
         # https://www.linkedin.com/voyager/api/identity/profiles/ACoAAAKT9JQBsH7LwKaE9Myay9WcX8OVGuDq9Uw
-        url = f"/identity/profiles/{public_id or urn_id}/profileView"
+        url = f"/identity/profiles/{profile_id}/profileView"
         data = self._fetch(url).json()
         if data and "status" in data and data["status"] != 200:
             self.logger.info(f"request failed: {data}")
@@ -1069,7 +1069,7 @@ class Linkedin(object):
             return False
 
         if not profile_urn:
-            profile_urn_string = self.get_profile(public_id=profile_public_id)[
+            profile_urn_string = self.get_profile(profile_public_id)[
                 "profile_urn"
             ]
             # Returns string of the form 'urn:li:fs_miniProfile:ACoAACX1hoMBvWqTY21JGe0z91mnmjmLy9Wen4w'
@@ -1150,7 +1150,7 @@ class Linkedin(object):
         me_profile = self.get_user_profile()
 
         if not target_profile_member_urn_id:
-            profile = self.get_profile(public_id=target_profile_public_id)
+            profile = self.get_profile(target_profile_public_id)
             target_profile_member_urn_id = int(get_id_from_urn(profile["member_urn"]))
 
         if not network_distance:
